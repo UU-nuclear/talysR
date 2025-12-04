@@ -9,7 +9,6 @@ c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      character*80     key
       integer          Zcomp,Ncomp,nex,J2,parity,J,iloop,ihill,ic2,jc2,
      +                 pc2
       real             Eex,term1,term2,damper,expo,ec2,wo2,diffnrj,
@@ -97,7 +96,7 @@ c flagfispartdamp: flag for fission partial damping
 c
         if (nfisbar(Zcomp,Ncomp).eq.2) then
           if (flagfispartdamp) call tdirbarrier(Zcomp,Ncomp,J2,parity,
-     +      1,2,tdir,rnfb1,Eex,iloop)
+     +      1,2,tdir,rnfb1,Eex)
           call t1barrier(Zcomp,Ncomp,J2,parity,1,tfb1,rnfb1,Eex,iloop)
           if (tfb1.lt.transeps) goto 30
           call t1barrier(Zcomp,Ncomp,J2,parity,2,tfb2,rnfb2,Eex,iloop)
@@ -173,11 +172,11 @@ c
           if (tfb3.lt.transeps) goto 30
           if (flagfispartdamp) then
             call tdirbarrier(Zcomp,Ncomp,J2,parity,1,2,
-     +        tdir12,rnfb1,Eex,iloop)
+     +        tdir12,rnfb1,Eex)
             call tdirbarrier(Zcomp,Ncomp,J2,parity,2,3,
-     +        tdir23,rnfb1,Eex,iloop)
+     +        tdir23,rnfb1,Eex)
             call tdirbarrier(Zcomp,Ncomp,J2,parity,1,3,
-     +        tdir13,rnfb1,Eex,iloop)
+     +        tdir13,rnfb1,Eex)
             trans2=Twkbtransint(Eex,1,Zcomp,Ncomp)
             trans3=Twkbtransint(Eex,2,Zcomp,Ncomp)
             tdir21=(1-trans2)*tdir12
@@ -194,7 +193,7 @@ c
             sumT3= tdir21+tfb3+Ta32+Tgam3
             Ti2=Ta12*(tdir23/sumT2+Ta23*tfb3/(sumT2*sumT3))
             Ti3=Ta13*(tfb3/sumT3+Ta32*tdir23/(sumT2*sumT3))
-            if ( abs((Ta23*Ta32)/(sumT2*sumT3)-1) .le. 1e-8 )  then
+            if (abs((Ta23*Ta32)/(sumT2*sumT3)-1.).le.1.e-8 )  then
               Rnorm=  sumT2*sumT3/( (tfb1+tdir23+Tgam2)*sumT3
      +          + Ta23*(tdir21+tfb3+Tgam3) )
             else

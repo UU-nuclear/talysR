@@ -1,5 +1,5 @@
       subroutine tdirbarrier(Zcomp,Ncomp,J2,parity,ibar,ibar2,trfis,
-     +  rhof,Eex,iloop)
+     +  rhof,Eex)
 c
 c +---------------------------------------------------------------------
 c | Author: Stephane Hilaire and Marieke Duijvestijn
@@ -10,12 +10,12 @@ c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      integer          Zcomp,Ncomp,J2,parity,ibar,iloop,J,itr,j2trans,
-     +                 pitrans,ihill,i,ibar2,ibar3
-      real             Eex,bfis,wfis,etrans,Eeff,twkbint,thill,elow,
-     +                 emid,eup,dE1,dE2,test,Twkbphaseint
+      integer          Zcomp,Ncomp,J2,parity,ibar,J,itr,j2trans,
+     +                 pitrans,i,ibar2,ibar3
+      real             Eex,etrans,Eeff,twkbint,elow,
+     +                 emid,eup,dE1,dE2,Twkbphaseint
       double precision trfis,rhof,trfisone,rho1,rho2,rho3,r1log,r2log,
-     +                 r3log,rho,rhotr,trfisonetwo,trfistwo,trfisthree
+     +                 r3log,rho,trfisonetwo,trfistwo,trfisthree
       external Twkbphaseint
 c
 c ********** Fission transmission coefficient for one barrier **********
@@ -37,7 +37,6 @@ c Correct LDM barrier height with ground state shell correction
 c
 c fismodelx: fission model
 c nfisbar  : number of fission barrier parameters
-c bfis,wfis: help variables
 c fbarrier : height of fission barrier
 c deltaW   : shell correction in nuclear mass
 c fwidth   : width of fission barrier
@@ -52,11 +51,9 @@ c efistrrot     : energy of rotational transition states
 c jfistrrot     : spin of rotational transition states
 c pitrans,Eeff  : help variables
 c pfistrrot     : parity of rotational transition states
-c thill         : Hill-Wheeler penetrability
 c primary       : flag to designate primary (binary) reaction
 c trfisone      : help variable
 c twkbint       : WKB penetrability
-c ihill         : counter for Hill-Wheeler magnitude
 c numhill       : maximum number of Hill-Wheeler points
 c tfisA         : transmission coefficient for Hill-Wheeler magnitude
 c rhofisA       : integrated level density corresponding to tfisA
@@ -140,44 +137,44 @@ c
      +        rhofis(i+1,J,parity,ibar2))
             rho3=min(rhofis(i+2,J,parity,ibar)*(1.+1.d-10),
      +        rhofis(i+2,J,parity,ibar2)*(1.+1.d-10))
-        endif
-        r1log=log(rho1)
-        r2log=log(rho2)
-        r3log=log(rho3)
-        if (r2log.ne.r1log.and.r2log.ne.r3log) then
-          rho=(rho1-rho2)/(r1log-r2log)*dE1
-     +      +(rho2-rho3)/(r2log-r3log)*dE2
-        else
-          rho=rho2*(dE1+dE2)
-        endif 
-        Eeff=Eex-emid
-        if (abs(ibar-ibar2).eq.1) then       
-          trfisone=twkbint(Eeff,ibar,Zcomp,Ncomp)
-          trfistwo=twkbint(Eeff,ibar2,Zcomp,Ncomp)
-          if ( twkbphaseint(Eeff,ibar,Zcomp,Ncomp) .gt. 0 ) then
-            trfis=trfis+rho*trfisone*trfistwo/
-     +        (1+(1.-trfisone)*(1.-trfistwo))
-          else
-            trfis=trfis+rho*trfisone*trfistwo
-          endif      
-        elseif (abs(ibar-ibar2).eq.2) then
-          trfisone=twkbint(Eeff,ibar,Zcomp,Ncomp)
-          trfistwo=twkbint(Eeff,ibar2,Zcomp,Ncomp)
-          ibar3=(ibar2+ibar)/2
-            trfisthree=twkbint(Eeff,ibar3,Zcomp,Ncomp)
-          if ( twkbphaseint(Eeff,ibar,Zcomp,Ncomp) .gt. 0 ) then
-            trfisonetwo=rho*trfisone*trfisthree/
-     +        (1+(1.-trfisone)*(1.-trfisthree))
-          else
-            trfisonetwo=rho*trfisone*trfisthree
           endif
-          if ( twkbphaseint(Eeff,ibar3,Zcomp,Ncomp) .gt. 0 ) then
-            trfis=trfis+rho*trfisonetwo*trfistwo/
-     +        (1+(1.-trfisonetwo)*(1.-trfistwo))
+          r1log=log(rho1)
+          r2log=log(rho2)
+          r3log=log(rho3)
+          if (r2log.ne.r1log.and.r2log.ne.r3log) then
+            rho=(rho1-rho2)/(r1log-r2log)*dE1
+     +        +(rho2-rho3)/(r2log-r3log)*dE2
           else
-            trfis=trfis+rho*trfisonetwo*trfistwo
+            rho=rho2*(dE1+dE2)
+          endif 
+          Eeff=Eex-emid
+          if (abs(ibar-ibar2).eq.1) then       
+            trfisone=twkbint(Eeff,ibar,Zcomp,Ncomp)
+            trfistwo=twkbint(Eeff,ibar2,Zcomp,Ncomp)
+            if ( twkbphaseint(Eeff,ibar,Zcomp,Ncomp) .gt. 0 ) then
+              trfis=trfis+rho*trfisone*trfistwo/
+     +          (1+(1.-trfisone)*(1.-trfistwo))
+            else
+              trfis=trfis+rho*trfisone*trfistwo
+            endif      
+          elseif (abs(ibar-ibar2).eq.2) then
+            trfisone=twkbint(Eeff,ibar,Zcomp,Ncomp)
+            trfistwo=twkbint(Eeff,ibar2,Zcomp,Ncomp)
+            ibar3=(ibar2+ibar)/2
+              trfisthree=twkbint(Eeff,ibar3,Zcomp,Ncomp)
+            if ( twkbphaseint(Eeff,ibar,Zcomp,Ncomp) .gt. 0 ) then
+              trfisonetwo=rho*trfisone*trfisthree/
+     +          (1+(1.-trfisone)*(1.-trfisthree))
+            else
+              trfisonetwo=rho*trfisone*trfisthree
+            endif
+            if ( twkbphaseint(Eeff,ibar3,Zcomp,Ncomp) .gt. 0 ) then
+              trfis=trfis+rho*trfisonetwo*trfistwo/
+     +          (1+(1.-trfisonetwo)*(1.-trfistwo))
+            else
+              trfis=trfis+rho*trfisonetwo*trfistwo
+            endif
           endif
-        endif
           rhof=rhof+rho
    20   continue
       endif

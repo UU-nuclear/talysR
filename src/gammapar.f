@@ -2,21 +2,21 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : December 23, 2019
+c | Date  : April 18, 2022
 c | Task  : Gamma ray parameters
 c +---------------------------------------------------------------------
 c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      logical      lexist
-      character*6  gamchar
-      character*80 key
-      character*90 gamfile
-      integer      Zix,Nix,Z,A,N,ia,irad,l,nen,it
-      real         eg1,sg1,gg1,eg2,sg2,gg2,egamref,enum,denom,ee,et,ft,
-     +             factor,fe1(numTqrpa),fstrength,temp,dtemp,fe1t,fm1,
-     +             fmax,dE,Eq,Emid,wt
+      logical       lexist
+      character*6   gamchar
+      character*132 key
+      character*132 gamfile
+      integer       Zix,Nix,Z,A,N,ia,irad,l,nen,it
+      real          eg1,sg1,gg1,eg2,sg2,gg2,egamref,enum,denom,ee,et,ft,
+     +              factor,fe1(numTqrpa),fstrength,temp,dtemp,fe1t,fm1,
+     +              fmax,dE,Eq,Emid,wt
 c
 c ***************** Default giant resonance parameters *****************
 c
@@ -156,7 +156,7 @@ c
           gamfile=trim(path)//'gamma/smlo2019/'//gamchar
         endif
       endif
-      if (strength.eq.10) gamfile=trim(path)//'gamma/hfbt_bsk27/'//
+      if (strength.eq.10) gamfile=trim(path)//'gamma/bsk27_E1/'//
      &  gamchar
       inquire (file=gamfile,exist=lexist)
       if (.not.lexist) goto 210
@@ -255,7 +255,7 @@ c
         if (strengthM1.eq.8)
      &    gamfile=trim(path)//'gamma/gognyM1/'//gamchar
         if (strengthM1.eq.10)
-     &    gamfile=trim(path)//'gamma/bsk27M1/'//gamchar
+     &    gamfile=trim(path)//'gamma/bsk27_M1/'//gamchar
         inquire (file=gamfile,exist=lexist)
         if (.not.lexist) goto 350
         open (unit=2,file=gamfile,status='old')
@@ -292,20 +292,20 @@ c
      +  fqrpa(Zix,Nix,numgamqrpa-1,1,0,1)
         qrpaexist(Zix,Nix,0,1)=.true.
   310   close (unit=2)
+      endif
 c
-c add some scissors mode contribution to spherical QRPA calculation 
+c Add some scissors mode contribution to spherical QRPA calculation 
 c
-        if (strengthM1.eq.10) then
-          if (epr(Zix,Nix,0,1,1).eq.0.) epr(Zix,Nix,0,1,1)=3.
-          if (gpr(Zix,Nix,0,1,1).eq.0.) gpr(Zix,Nix,0,1,1)=2.
-          if (tpr(Zix,Nix,0,1,1).eq.0.) tpr(Zix,Nix,0,1,1)=
-     &      7.e-5*beta2(Zix,Nix,0)**2*A**2
-        endif
+  350 if (strengthM1.eq.10) then
+        if (epr(Zix,Nix,0,1,1).eq.0.) epr(Zix,Nix,0,1,1)=5./A**(0.1)
+        if (gpr(Zix,Nix,0,1,1).eq.0.) gpr(Zix,Nix,0,1,1)=1.5
+        if (tpr(Zix,Nix,0,1,1).eq.0.) tpr(Zix,Nix,0,1,1)=
+     +    1.0e-2*abs(beta2(Zix,Nix,0))*A**(0.9)
       endif
 c
 c M2-6 radiation
 c
-  350 do 360 l=2,gammax
+      do 360 l=2,gammax
         if (egr(Zix,Nix,0,l,1).eq.0.) egr(Zix,Nix,0,l,1)=
      +    egr(Zix,Nix,0,l-1,1)
         if (ggr(Zix,Nix,0,l,1).eq.0.) ggr(Zix,Nix,0,l,1)=
@@ -339,34 +339,39 @@ c
             endif
             nen=nen+1
             eqrpa(Zix,Nix,nen,irad,l)=ee+et
-            fqrpa(Zix,Nix,nen,1,irad,l)=onethird*pi2h2c2*fe1t*ft
+            do it=1,nTqrpa
+              fqrpa(Zix,Nix,nen,it,irad,l)=onethird*pi2h2c2*fe1t*ft
+            enddo
   440       if (nen.lt.numgamqrpa) goto 430
   500       if (nen.gt.0) qrpaexist(Zix,Nix,irad,l)=.true.
             close (unit=2)
+            nTqrpa=1
           endif
   420   continue
   410 continue
 c
 c Adjustment of width of tabulated PSF
 c
-      do 510 irad=0,1
-        do 520 l=1,gammax
-          wt=wtable(Zix,Nix,irad,l)*wtableadjust(Zix,Nix,irad,l)
-          Emid=0.
-          fmax=0.
-          do 530 nen=1,numgamqrpa
-            if (fqrpa(Zix,Nix,nen,1,irad,l).gt.fmax) then
-              fmax=fqrpa(Zix,Nix,nen,1,irad,l)
-              Emid=eqrpa(Zix,Nix,nen,irad,l)
-            endif
-  530     continue
-          do 540 nen=1,numgamqrpa
-            Eq=eqrpa(Zix,Nix,nen,irad,l)
-            dE=Eq-Emid
-            eqrpa(Zix,Nix,nen,irad,l)=Emid+dE*wt
-  540     continue
-  520   continue
-  510 continue
+      if (.not.flagpsfglobal) then
+        do 510 irad=0,1
+          do 520 l=1,gammax
+            wt=wtable(Zix,Nix,irad,l)*wtableadjust(Zix,Nix,irad,l)
+            Emid=0.
+            fmax=0.
+            do 530 nen=1,numgamqrpa
+              if (fqrpa(Zix,Nix,nen,1,irad,l).gt.fmax) then
+                fmax=fqrpa(Zix,Nix,nen,1,irad,l)
+                Emid=eqrpa(Zix,Nix,nen,irad,l)
+              endif
+  530       continue
+            do 540 nen=1,numgamqrpa
+              Eq=eqrpa(Zix,Nix,nen,irad,l)
+              dE=Eq-Emid
+              eqrpa(Zix,Nix,nen,irad,l)=Emid+dE*wt
+  540       continue
+  520     continue
+  510   continue
+      endif
       return
       end
 Copyright (C)  2016 A.J. Koning, S. Hilaire and S. Goriely

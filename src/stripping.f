@@ -2,21 +2,21 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning and Vivian Demetriou
-c | Date  : April 4, 2012
+c | Date  : July 13, 2021
 c | Task  : Contribution of stripping and pickup reactions
 c +---------------------------------------------------------------------
 c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      character*80 key
-      logical      surfwell
-      integer      type,ndelta,ndeltapi,ndeltanu,ppi,hpi,pnu,hnu,A,Z,N,
-     +             i,j,nen,k,l
-      real         proj2sp1,ejecmass,ejec2sp1,term1,Kap,Va,term2,term3,
-     +             term4,base,term5,factor,termps,V1well,surface,XNT,
-     +             gsn,gsp,Ewell,Eout,factor1,Eres,P,preeqpair,omegaNT,
-     +             omegaph,phdens2
+      character*132 key
+      logical       surfwell
+      integer       type,ndelta,ndeltapi,ndeltanu,ppi,hpi,pnu,hnu,A,Z,N,
+     +              i,j,nen,k,l
+      real          proj2sp1,ejecmass,ejec2sp1,term1,Kap,Va,term2,term3,
+     +              term4,base,term5,factor,termps,V1well,surface,XNT,
+     +              gsn,gsp,Ewell,Eout,factor1,Eres,P,preeqpair,omegaNT,
+     +              omegaph,phdens2
 c
 c ************************** Kalbach model *****************************
 c
@@ -68,8 +68,15 @@ c
           if (type.eq.3.and.Einc.gt.80.) Kap=80./Einc
           if (type.eq.5) Kap=5.
         endif
-        if (k0.eq.6.and.(type.eq.1.or.type.eq.2))
+        if (k0.eq.6.and.(type.eq.1.or.type.eq.2)) 
      +    Kap=12.-11.*max(eninccm-20.,0.)/eninccm
+        if (k0.ge.4.and.(type.eq.1.or.type.eq.2)) then
+c
+c Extra adjustment for (a,n) and (a,p) cross sections, TENDL-2021
+c Also applied to incident tritons and helions
+c
+          Kap=Kap*max(4.-Atarget/80.,1.)
+        endif
         ndelta=abs(parA(k0)-parA(type))
         ndeltapi=parZ(k0)-parZ(type)
         ndeltanu=parN(k0)-parN(type)

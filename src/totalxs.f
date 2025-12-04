@@ -2,7 +2,7 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : October 15, 2015
+c | Date  : September 12, 2021
 c | Task  : Total cross sections
 c +---------------------------------------------------------------------
 c
@@ -10,6 +10,7 @@ c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
       integer type,ident,idc,Zcomp,Ncomp
+      real    nubarWahl
 c
 c *********************** Specific cross sections **********************
 c
@@ -36,7 +37,8 @@ c
               endif
    20       continue
           endif
-   30     if (xsconttot(type).eq.0.) then
+   30     xsdisctot(type)=min(xsexclusive(type),xsdisctot(type))
+          if (xsconttot(type).eq.0.) then
             xsexclcont(type)=0.
           else
             xsexclcont(type)=max(xsexclusive(type)-xsdisctot(type),0.)
@@ -91,6 +93,8 @@ c
   210   continue
         if (.not.flagffruns) xsfistot0=xsfistot
         if (flagastro) xsastrofis(nin)=xsfistot
+        if (.not.(flagmassdis.and.fymodel.ge.3)) 
+     +    nubar(1)=nubarWahl(Einc)
       endif
       return
       end

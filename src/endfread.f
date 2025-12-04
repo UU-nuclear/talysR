@@ -2,7 +2,7 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : December 1, 2013
+c | Date  : October 23, 2020
 c | Task  : Read ECIS results for incident particle on ENDF-6 energy
 c |         grid
 c +---------------------------------------------------------------------
@@ -11,7 +11,7 @@ c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
       character*72     line
-      integer          infileendf,nen,Z,A,nend,mt,nen2
+      integer          infileendf,nen,Z,A,nend,mt,nen2,Nxs
       real             tripathi,e,Ea,Eb,xsa,xsb,xsc,xsd,Efac,xsdift,
      +                 xsdife,enuc
       double precision xs
@@ -45,15 +45,15 @@ c
       do 30 nen=1,nen6
         e=real(e6(nen))
         if (k0.gt.1.and.e.lt.coullimit(k0)) goto 30
-        read(infileendf,'()')
-        if (k0.eq.1) then
+        read(infileendf,'(57x,i3)') Nxs
+        if (Nxs.gt.1) then
           read(infileendf,*) xs
           xstot6(nen)=max(real(xs),0.)
         endif
         read(infileendf,*) xs
         xsreac6(nen)=max(real(xs),0.)
         xsopt6(nen)=xsreac6(nen)
-        if (k0.eq.1) then
+        if (Nxs.eq.3) then
           read(infileendf,*) xs
           xselassh6(nen)=max(real(xs),0.)
         endif
@@ -188,7 +188,6 @@ c
 c parsym    : symbol of particle
 c Atarget   : mass number of target nucleus
 c Ztarget   : charge number of target nucleus
-c Starget   : symbol of target nucleus
 c numinclow : number of incident energies below Elow
 c fxsnonel  : non-elastic cross section for incident channel
 c fxselastot: total elastic cross section (neutrons only) for
@@ -196,8 +195,8 @@ c             incident channel
 c fxstotinc : total cross section (neutrons only) for incident channel
 c
       open (unit=1,file='endf.tot',status='replace')
-      write(1,'("# ",a1," + ",i3,a2," Total cross sections")')
-     +  parsym(k0),Atarget,Starget
+      write(1,'("# ",a1," + ",a," Total cross sections")')
+     +  parsym(k0),trim(targetnuclide)
       write(1,'("# ")')
       write(1,'("# ")')
       write(1,'("# # energies =",i6)') nen6+numinclow
@@ -215,8 +214,8 @@ c
 c Total cross sections only
 c
       open (unit=1,file='endftot.tot',status='replace')
-      write(1,'("# ",a1," + ",i3,a2," Total cross sections")')
-     +  parsym(k0),Atarget,Starget
+      write(1,'("# ",a1," + ",a," Total cross sections")')
+     +  parsym(k0),trim(targetnuclide)
       write(1,'("# ")')
       write(1,'("# ")')
       write(1,'("# # energies =",i6)') nen6+numinclow
@@ -232,8 +231,8 @@ c
 c Elastic cross sections only
 c
       open (unit=1,file='endfel.tot',status='replace')
-      write(1,'("# ",a1," + ",i3,a2," Elastic cross sections")')
-     +  parsym(k0),Atarget,Starget
+      write(1,'("# ",a1," + ",a," Elastic cross sections")')
+     +  parsym(k0),trim(targetnuclide)
       write(1,'("# ")')
       write(1,'("# ")')
       write(1,'("# # energies =",i6)') nen6+numinclow
@@ -249,8 +248,8 @@ c
 c Nonelastic cross sections only
 c
       open (unit=1,file='endfnon.tot',status='replace')
-      write(1,'("# ",a1," + ",i3,a2," Nonelastic cross sections")')
-     +  parsym(k0),Atarget,Starget
+      write(1,'("# ",a1," + ",a," Nonelastic cross sections")')
+     +  parsym(k0),trim(targetnuclide)
       write(1,'("# ")')
       write(1,'("# ")')
       write(1,'("# # energies =",i6)') nen6+numinclow

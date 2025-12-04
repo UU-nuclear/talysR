@@ -2,7 +2,7 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : November 25, 2014
+c | Date  : October 20, 2022
 c | Task  : Nuclear structure parameters
 c +---------------------------------------------------------------------
 c
@@ -54,6 +54,7 @@ c
       call levels(Zix,Nix)
       if (flagendf.and.primary) call gammadecay(Zix,Nix)
       call deformpar(Zix,Nix)
+      if (flagfit.and.Zix.eq.0.and.Nix.eq.0) call xsfit(Ztarget,Atarget)
       if (parinclude(0).or.flagcomp) then
         call resonancepar(Zix,Nix)
         call gammapar(Zix,Nix)

@@ -9,11 +9,14 @@ c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
+      integer numP
+      parameter (numP=1000000)
       logical      lexist
       character*9  afile
       character*12 xsfile,rpfile,pfile
-      character*30 resfile
-      character*72 infile,outfile
+      character*72 resfile
+      character*72 outfile
+      character*132 infile
       character*80 string,headstring(5)
       integer      iT,Ntemp,MF,MT,i,nlin,j,k,NR,NPr,NP0,NT,Ntot,Nh,
      +             ifile,Zix,Nix,nen
@@ -43,12 +46,20 @@ c
       write(afile(1:3),'(i3.3)') Atarget
       resfile='n-'//trim(nuc(Ztarget))//trim(afile)//trim(reslib)
       infile=trim(path)//'resfiles/'//trim(reslib)//'/'
-     +  //resfile
+     +  //trim(resfile)
       inquire (file=infile,exist=lexist)
       if (.not.lexist) then
-        write(*,'(" TALYS-warning: ",a72," does not exist")') infile
+        write(*,'(" TALYS-warning: ",a," does not exist")') trim(infile)
         return
       endif
+      open(unit=41,file=infile,status='unknown')
+      open(unit=42,file=resfile,status='unknown')
+      do
+        read(41,'(a)',end=5) string
+        write(42,'(a)') string
+      enddo
+    5 close (41)
+      close (42)
       if (flagastro) then
         fact0=3.951776e+17
         Zix=parZ(k0)
@@ -56,8 +67,8 @@ c
         am=redumass(Zix,Nix,k0)
         convfac=2.45484e+5/sqrt(am)
         open(unit=2,file='astrorateres.g',status='replace')
-        write(2,'("# Reaction rate for ",i3,a2,"(",a1,",g)")')
-     +    Atarget,Starget,parsym(k0)
+        write(2,'("# Reaction rate for ",a,"(",a1,",g)")')
+     +    trim(targetnuclide),parsym(k0)
         write(2,'("#    T     kT[keV]     Rate       MACS")')
         Ntemp=nTmax
       else
@@ -78,7 +89,7 @@ c
             outfile=resfile(1:11)//'point0'
           endif
         endif
-        call prepro(infile,outfile,temp,flaggroup)
+        call prepro(resfile,outfile,temp,flaggroup)
         open (unit=1,file=outfile,status='old')
    20   read(1,'(a80)',err=100,end=100) string
         read(string(71:72),'(i2)') MF
@@ -110,12 +121,12 @@ c
           endif
   140   continue
   150   read(1,'(a80)',err=100,end=100) string
-        if (MT.eq.1) xsfile='totalxs.tot'
+        if (MT.eq.1) xsfile='total.tot'
         if (MT.eq.2) xsfile='elastic.tot'
         if (MT.eq.18) xsfile='fission.tot'
         rpfile='rp000000.tot'
         if (MT.eq.102) then
-            xsfile='xs000000.tot'
+          xsfile='xs000000.tot'
           write(rpfile(3:5),'(i3.3)') Ztarget
           write(rpfile(6:8),'(i3.3)') Atarget+1
         endif

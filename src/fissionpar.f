@@ -2,18 +2,19 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Stephane Hilaire, Marieke Duijvestijn and Arjan Koning
-c | Date  : January 5, 2017
+c | Date  : April 27, 2021
 c | Task  : Fission parameters
 c +---------------------------------------------------------------------
 c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      logical      lexist
-      character*6  fischar
-      character*90 fisfile,hbsfile,c2file
-      integer      Zix,Nix,fislocal,Z,N,A,ia,i,j,il,modz,modn,nbar,istat
-      real         bar1,bar2,hw1,hw2,egs,lbar0,esp,bb,vv
+      logical       lexist
+      character*6   fischar
+      character*132 fisfile,hbsfile,c2file
+      integer       Zix,Nix,fislocal,Z,N,A,ia,i,j,il,modz,modn,nbar,
+     +              istat
+      real          bar1,bar2,hw1,hw2,egs,lbar0,esp,bb,vv
 c
 c ****************** Read fission barrier parameters *******************
 c
@@ -114,12 +115,15 @@ c egs     : rotating ground state energy
 c lbar0   : l-value for which barrier height becomes zero
 c il      : angular momentum
 c
+c Empirical adjustment of fission barrier to globally fit subactinide 
+c fission
+c
       if (fislocal.eq.3) then
         call fisdata
         il=0
         nfisbar(Zix,Nix)=1
         call barsierk(Z,A,il,bar1,egs,lbar0)
-        if (fbarrier(Zix,Nix,1).eq.0.) fbarrier(Zix,Nix,1)=bar1
+        if (fbarrier(Zix,Nix,1).eq.0.) fbarrier(Zix,Nix,1)=Cbarrier*bar1
         if (fwidth(Zix,Nix,1).eq.0.) fwidth(Zix,Nix,1)=0.24
       endif
 c
@@ -169,8 +173,9 @@ c
           else
             do 320 i=1,nbeta
               read(2,'(f10.3,20x,f10.3)') bb,vv
-              betafis(i)=betafiscor(Zix,Nix)*bb
-              vfis(i)=vfiscor(Zix,Nix)*vv
+              betafis(i)=betafiscoradjust(Zix,Nix)*
+     +          betafiscor(Zix,Nix)*bb
+              vfis(i)=vfiscoradjust(Zix,Nix)*vfiscor(Zix,Nix)*vv
   320       continue
             if (nbins0.eq.0) then
               nbinswkb=30
@@ -242,7 +247,7 @@ c
           if (istat.ne.0) goto 410
           if (nfistrhb(Zix,Nix,i).gt.numlev) then
             write(*,'(" TALYS-error: there are more than",i3,
-     +        " head band states in file ",a73)') numlev,hbsfile
+     +        " head band states in file ",a)') numlev,trim(hbsfile)
             write(*,'(" numlev in talys.cmb should be increased")')
             stop
           endif
@@ -273,7 +278,7 @@ c
           if (istat.ne.0) goto 430
           if (nfisc2hb(Zix,Nix,i).gt.numlev) then
             write(*,'(" TALYS-error: there are more than",i3,
-     +        " class 2 states in file ",a73)') numlev,c2file
+     +        " class 2 states in file ",a)') numlev,trim(c2file)
             write(*,'(" numlev in talys.cmb should be increased")')
             stop
           endif

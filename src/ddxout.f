@@ -2,7 +2,7 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : December 13, 2017
+c | Date  : December 21, 2020
 c | Task  : Output of double-differential cross sections
 c +---------------------------------------------------------------------
 c
@@ -36,7 +36,6 @@ c xscompoutad  : compound emission angular distribution
 c ddxecount    : counter for double-differential cross section files
 c fileddxe     : designator for double-differential cross sections on
 c                separate file: angular distribution
-c Starget      : symbol of target nucleus
 c natstring    : string extension for file names
 c iso          : counter for isotope
 c locate       : subroutine to find value in ordered table
@@ -72,18 +71,30 @@ c
             enf=fileddxe(type,i)
             call locate(Eo,ebegin(type),eendout(type),enf,nen)
             fac=(enf-Eo(nen))/deltaE(nen)
-            ddxfile=' ddxE0000.000E0000.0.MeV'//natstring(iso)
-            write(ddxfile(1:1),'(a1)') parsym(type)
-            write(ddxfile(6:13),'(f8.3)') Einc
-            write(ddxfile(6:9),'(i4.4)') int(Einc)
-            write(ddxfile(15:20),'(f6.1)') enf
-            write(ddxfile(15:18),'(i4.4)') int(enf)
-            open (unit=1,file=ddxfile,status='replace')
-            write(1,'("# ",a1," + ",i3,a2,": ",a8," DDX spectrum")')
-     +        parsym(k0),Atarget,Starget,parname(type)
-            write(1,'("# E-incident = ",f8.3)') Einc
+            if (flagblock) then
+              ddxfile=' ddx.MeV'//natstring(iso)
+              write(ddxfile(1:1),'(a1)') parsym(type)
+              if (.not.ddxexist1(type)) then
+                ddxexist1(type)=.true.
+                open (unit=1,file=ddxfile,status='unknown')
+              else
+                open (unit=1,file=ddxfile,status='unknown',
+     +            position='append')
+              endif
+            else
+              ddxfile=' ddxE0000.000E0000.0.MeV'//natstring(iso)
+              write(ddxfile(1:1),'(a1)') parsym(type)
+              write(ddxfile(6:13),'(f8.3)') Einc
+              write(ddxfile(6:9),'(i4.4)') int(Einc)
+              write(ddxfile(15:20),'(f6.1)') enf
+              write(ddxfile(15:18),'(i4.4)') int(enf)
+              open (unit=1,file=ddxfile,status='unknown')
+            endif
+            write(1,'("# ",a1," + ",a,": ",a8," DDX spectrum")')
+     +        parsym(k0),trim(targetnuclide),parname(type)
+            write(1,'("# E-incident = ",f10.5)') Einc
             write(1,'("# E-emission = ",f8.3)') enf
-            write(1,'("# # angles =",i4)') nanglecont+1
+            write(1,'("# # angles   = ",i4)') nanglecont+1
             write(1,'("# Angle    Total       Direct    Pre-equil.",
      +        "  Mult. preeq  Compound")')
             do 50 iang=0,nanglecont
@@ -131,19 +142,36 @@ c
               enf=fileddxe(type,i)
               call locate(Eo,1,iejlab(type),enf,nen)
               fac=(enf-Eo(nen))/deltaE(nen)
-              ddxfile=' ddxE0000.000E0000.0.lab'//natstring(iso)
+              if (flagblock) then
+                ddxfile=' ddx.lab'//natstring(iso)
+                write(ddxfile(1:1),'(a1)') parsym(type)
+                if (.not.ddxexist2(type)) then
+                  ddxexist2(type)=.true.
+                  open (unit=1,file=ddxfile,status='unknown')
+                else
+                  open (unit=1,file=ddxfile,status='unknown',
+     +              position='append')
+                endif
+              else
+                ddxfile=' ddxE0000.000E0000.0.lab'//natstring(iso)
+                write(ddxfile(1:1),'(a1)') parsym(type)
+                write(ddxfile(6:13),'(f8.3)') Einc
+                write(ddxfile(6:9),'(i4.4)') int(Einc)
+                write(ddxfile(15:20),'(f6.1)') enf
+                write(ddxfile(15:18),'(i4.4)') int(enf)
+                open (unit=1,file=ddxfile,status='unknown')
+              endif
               write(ddxfile(1:1),'(a1)') parsym(type)
               write(ddxfile(6:13),'(f8.3)') Einc
               write(ddxfile(6:9),'(i4.4)') int(Einc)
               write(ddxfile(15:20),'(f6.1)') enf
               write(ddxfile(15:18),'(i4.4)') int(enf)
-              open (unit=1,file=ddxfile,status='replace')
-              write(1,'("# ",a1," + ",i3,a2,": ",a8," DDX spectrum",
-     +          " in LAB system")') parsym(k0),Atarget,Starget,
+              write(1,'("# ",a1," + ",a,": ",a8," DDX spectrum",
+     +          " in LAB system")') parsym(k0),trim(targetnuclide),
      +          parname(type)
-              write(1,'("# E-incident = ",f8.3)') Einc
+              write(1,'("# E-incident = ",f10.5)') Einc
               write(1,'("# E-emission = ",f8.3)') enf
-              write(1,'("# # angles =",i4)') nanglecont+1
+              write(1,'("# # angles   = ",i4)') nanglecont+1
               write(1,'("# Angle    Total")')
               do 90 iang=0,nanglecont
                 xsa=ddxejlab(type,nen,iang)
@@ -151,6 +179,7 @@ c
                 xs1=xsa+fac*(xsb-xsa)
                 write(1,'(f5.1,es12.5)') anglecont(iang),xs1
    90         continue
+              close (unit=1)
    80       continue
           endif
    10   continue
@@ -188,16 +217,28 @@ c
             angf=fileddxa(type,i)
             call locate(anglecont,0,nanglecont,angf,iang)
             fac=(angf-anglecont(iang))/anginc
-            ddxfile=' ddxE0000.000A000.0.deg'//natstring(iso)
-            write(ddxfile(1:1),'(a1)') parsym(type)
-            write(ddxfile(6:13),'(f8.3)') Einc
-            write(ddxfile(6:9),'(i4.4)') int(Einc)
-            write(ddxfile(15:19),'(f5.1)') angf
-            write(ddxfile(15:17),'(i3.3)') int(angf)
-            open (unit=1,file=ddxfile,status='replace')
-            write(1,'("# ",a1," + ",i3,a2,": ",a8," DDX spectrum")')
-     +        parsym(k0),Atarget,Starget,parname(type)
-            write(1,'("# E-incident = ",f8.3)') Einc
+            if (flagblock) then
+              ddxfile=' ddx.deg'//natstring(iso)
+              write(ddxfile(1:1),'(a1)') parsym(type)
+              if (.not.ddxexist3(type)) then
+                ddxexist3(type)=.true.
+                open (unit=1,file=ddxfile,status='unknown')
+              else
+                open (unit=1,file=ddxfile,status='unknown',
+     +            position='append')
+              endif
+            else
+              ddxfile=' ddxE0000.000A000.0.deg'//natstring(iso)
+              write(ddxfile(1:1),'(a1)') parsym(type)
+              write(ddxfile(6:13),'(f8.3)') Einc
+              write(ddxfile(6:9),'(i4.4)') int(Einc)
+              write(ddxfile(15:19),'(f5.1)') angf
+              write(ddxfile(15:17),'(i3.3)') int(angf)
+              open (unit=1,file=ddxfile,status='unknown')
+            endif
+            write(1,'("# ",a1," + ",a,": ",a8," DDX spectrum")')
+     +        parsym(k0),trim(targetnuclide),parname(type)
+            write(1,'("# E-incident = ",f10.5)') Einc
             write(1,'("# Angle      = ",f7.3)') angf
             write(1,'("# # energies =",i6)')
      +        eendout(type)-ebegin(type)+1
@@ -242,17 +283,29 @@ c
               angf=fileddxa(type,i)
               call locate(anglecont,0,nanglecont,angf,iang)
               fac=(angf-anglecont(iang))/anginc
-              ddxfile=' ddxE0000.000A000.0.lab'//natstring(iso)
-              write(ddxfile(1:1),'(a1)') parsym(type)
-              write(ddxfile(6:13),'(f8.3)') Einc
-              write(ddxfile(6:9),'(i4.4)') int(Einc)
-              write(ddxfile(15:19),'(f5.1)') angf
-              write(ddxfile(15:17),'(i3.3)') int(angf)
-              open (unit=1,file=ddxfile,status='replace')
-              write(1,'("# ",a1," + ",i3,a2,": ",a8," DDX spectrum",
-     +          " in LAB system")') parsym(k0),Atarget,Starget,
+              if (flagblock) then
+                ddxfile=' ddx.lab'//natstring(iso)
+                write(ddxfile(1:1),'(a1)') parsym(type)
+                if (.not.ddxexist4(type)) then
+                  ddxexist4(type)=.true.
+                  open (unit=1,file=ddxfile,status='unknown')
+                else
+                  open (unit=1,file=ddxfile,status='unknown',
+     +              position='append')
+                endif
+              else
+                ddxfile=' ddxE0000.000A000.0.lab'//natstring(iso)
+                write(ddxfile(1:1),'(a1)') parsym(type)
+                write(ddxfile(6:13),'(f8.3)') Einc
+                write(ddxfile(6:9),'(i4.4)') int(Einc)
+                write(ddxfile(15:19),'(f5.1)') angf
+                write(ddxfile(15:17),'(i3.3)') int(angf)
+                open (unit=1,file=ddxfile,status='unknown')
+              endif
+              write(1,'("# ",a1," + ",a,": ",a8," DDX spectrum",
+     +          " in LAB system")') parsym(k0),trim(targetnuclide),
      +          parname(type)
-              write(1,'("# E-incident = ",f8.3)') Einc
+              write(1,'("# E-incident = ",f10.5)') Einc
               write(1,'("# Angle      = ",f7.3)') angf
               write(1,'("# # energies =",i6)') iejlab(type)
               write(1,'("#  E-out    Total")')

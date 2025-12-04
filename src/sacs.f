@@ -9,6 +9,8 @@ c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
+      integer numP
+      parameter (numP=1000000)
       character*16 xsfile
       integer       npart,ia,ih,it,id,ip,in,ident,idc,nen,istat,Nxs
       real          Exs(0:numP),xs(0:numP),Emax,xsmax,Ea,Eb,xsa,xsb,
@@ -19,7 +21,6 @@ c
 c parsym    : symbol of particle
 c k0        : index of incident particle
 c Atarget   : mass number of target nucleus
-c Starget   : symbol of target nucleus
 c npart     : number of particles in outgoing channel
 c maxchannel: maximal number of outgoing particles in individual
 c             channel description (e.g. this is 3 for (n,2np))
@@ -37,10 +38,12 @@ c Eh2       : help variable
 c xshalf    : cross section at half maximum
 c Ewidth    : full width at half maximum
 c
+      Exs = 0.
+      xs = 0.
       open (unit=1,file='sacs.dat',status='replace')
-      write(1,'("# ",a1," + ",i3,a2,
+      write(1,'("# ",a1," + ",a,
      +  ": Statistical analysis of cross sections")')
-     +  parsym(k0),Atarget,Starget
+     +  parsym(k0),trim(targetnuclide)
       write(1,'("# Z   A     channel    E-thresh.   Emax    ",
      +  " xsmax    width ")')
       do 10 npart=0,maxchannel
@@ -65,9 +68,9 @@ c
               xsmax=0.
               read(3,'(///,14x,i6,/)') Nxs
               do 30 nen=1,Nxs
-                read(3,*) Exs(nen),xs(nen)
+                read(3,*,end=35) Exs(nen),xs(nen)
    30         continue
-              close (unit=3)
+   35         close (unit=3)
               do 40 nen=1,Nxs
                 if (xs(nen).gt.xsmax) then
                   Emax=Exs(nen)

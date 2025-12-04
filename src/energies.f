@@ -58,6 +58,7 @@ c
         wavenum=sqrt(real(2.*amu*redumass(parZ(k0),parN(k0),k0)*
      +    eninccm))/hbarc
       endif
+      if (flaginitpop) eninccm=Einc
       Etotal=eninccm+S(0,0,k0)+targetE
 c
 c ***************** Set upper limit for energy grid ********************
@@ -148,6 +149,7 @@ c eaddel     : on-set incident energy for addition of elastic peak
 c              to spectra
 c flagadd    : flag for addition of discrete states to spectra
 c flagaddel  : flag for addition of elastic peak to spectra
+c flagffruns : flag to denote that run is for fission fragment
 c numZ       : maximal number of protons away from initial compound
 c              nucleus
 c numN       : maximal number of neutrons away from initial compound
@@ -194,6 +196,10 @@ c
         flagaddel=.false.
       else
         flagaddel=.true.
+      endif
+      if (flagffruns.or.flaginitpop) then
+        flagaddel=.false.
+        flagadd=.false.
       endif
       do 210 Zix=0,numZ
         do 210 Nix=0,numN

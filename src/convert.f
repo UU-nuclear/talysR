@@ -2,15 +2,15 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : May 26, 2016
+c | Date  : February 5, 2020
 c | Task  : Convert input line from upper case to lowercase
 c +---------------------------------------------------------------------
 c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      character*80 str
-      integer      i,k
+      character*132 str
+      integer       i,k
 c
 c ************** Convert uppercase to lowercase characters *************
 c
@@ -100,6 +100,10 @@ c
         endif
         if (inline(i)(k+1:k+13).eq.'ompenergyfile') then
           inline(i)(k+14:80)=str(k+14:80)
+          return
+        endif
+        if (inline(i)(k+1:k+9).eq.'yieldfile') then
+          inline(i)(k+10:80)=str(k+10:80)
           return
         endif
    20 continue

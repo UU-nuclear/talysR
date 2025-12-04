@@ -141,6 +141,7 @@ c
           Eout=espec(type,nenout)
           espec(type,nenout)=convfac1*Eout+convfac2+convfac3*sqrt(Eout)
           call locate(egrid,nend,eend(type),Eout,nen)
+          nen = min(nen, numen-1)
           Ea=Eout-egrid(nen)
           Eb=egrid(nen+1)-egrid(nen)
           if (Ea.lt.Eb) then
@@ -237,7 +238,7 @@ c
         Eaveragesum=Eaveragebin(type)*xsbinary(type)
         do 210 Zcomp=0,maxZ
           do 210 Ncomp=0,maxN
-            if (Zcomp.eq.0.and.Ncomp.eq.0) goto 210
+            if (.not.flaginitpop.and.Zcomp.eq.0.and.Ncomp.eq.0) goto 210
             xssum=xssum+xsfeed(Zcomp,Ncomp,type)
             Eaveragesum=Eaveragesum+
      +        Eaveragemul(Zcomp,Ncomp,type)*xsfeed(Zcomp,Ncomp,type)

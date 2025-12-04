@@ -2,13 +2,14 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : November 16, 2016
+c | Date  : December 21, 2020
 c | Task  : Output of recoils
 c +---------------------------------------------------------------------
 c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
+      character*9      recstring
       character*29     recfile
       integer          Zcomp,Ncomp,Z,A,nen
       double precision sumcm
@@ -37,7 +38,6 @@ c sumcm     : total residual production in the CM frame
 c xselasinc : total elastic cross section (neutrons only) for incident
 c             channel
 c filerecoil: flag for recoil spectra on separate file
-c Starget   : symbol of target nucleus
 c Einc      : incident energy in MeV
 c
       write(*,'(/" 8. Recoil spectra")')
@@ -65,14 +65,26 @@ c
 c Write results to separate file
 c
         if (filerecoil) then
-          recfile='rec000000spec0000.000.tot'//natstring(iso)
-          write(recfile(4:9),'(2i3.3)') Z,A
-          write(recfile(14:21),'(f8.3)') Einc
-          write(recfile(14:17),'(i4.4)') int(Einc)
-          open (unit=1,file=recfile,status='replace')
-          write(1,'("# ",a1," + ",i3,a2,": Recoil spectrum for ",
-     +      i3,a2)') parsym(k0),Atarget,Starget,A,nuc(Z)
-          write(1,'("# E-incident = ",f8.3)') Einc
+          recstring='rec000000'
+          write(recstring(4:9), '(2i3.3)') Z, A
+          if (flagblock) then
+            recfile=recstring//'.tot'//natstring(iso)
+            if (.not.recexist(Zcomp,Ncomp)) then
+              recexist(Zcomp,Ncomp)=.true.
+              open (unit=1,file=recfile,status='unknown')
+            else
+              open (unit=1,file=recfile,status='unknown',
+     +          position='append')
+            endif
+          else
+            recfile = recstring//'spec0000.000.tot'//natstring(iso)
+            write(recfile(14:21), '(f8.3)') Einc
+            write(recfile(14:17), '(i4.4)') int(Einc)
+            open (unit=1,file=recfile,status='unknown')
+          endif
+          write(1,'("# ",a1," + ",a,": Recoil spectrum for ",
+     +      i3,a2)') parsym(k0),trim(targetnuclide),A,nuc(Z)
+          write(1,'("# E-incident = ",f10.5)') Einc
           write(1,'("# ")')
           write(1,'("# # energies =",i6)') maxenrec+1
           write(1,'("#  E-out   Cross section")')

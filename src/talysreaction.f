@@ -2,7 +2,7 @@
 c
 c +---------------------------------------------------------------------
 c | Author: Arjan Koning
-c | Date  : June 15, 2014
+c | Date  : August 23, 2021
 c | Task  : Reaction models
 c +---------------------------------------------------------------------
 c
@@ -100,12 +100,14 @@ c
 c
 c Pre-equilibrium reactions
 c
+c preeqspindis: subroutine for preequilibrium spin distribution
 c flagpreeq : flag for pre-equilibrium calculation
 c preeq     : subroutine for preequilibrium reactions
 c population: subroutine for processing of pre-equilibrium spectra
 c             into population bins
 c
         if (flagpreeq) then
+          call preeqspindis
           call preeq
           call population
         endif
@@ -156,7 +158,8 @@ c flagmassdis  : flag for calculation of fission fragment mass yields
 c massdis      : subroutine for fission fragment yields
 c massdisout   : subroutine for output of fission fragment yields
 c fymodel      : fission yield model, 1: Brosa 2: GEF
-c nubarout     : subroutine for output of number of fission neutrons
+c nubarout     : subroutine for output of av number of fission neutrons
+c nudisout     : subroutine for output of number of fission neutrons
 c                and spectra
 c residual     : subroutine for residual production cross sections
 c totalrecoil  : subroutine for recoil results
@@ -174,15 +177,19 @@ c
         if (flagfission.and.flagmassdis) then
           call massdis
           if (fymodel.le.2) call massdisout
-          if (fymodel.eq.2) call nubarout
+          if (fymodel.eq.2) then
+            call nubarout
+            call nudisout
+          endif
         endif
+        if (breakupmodel.eq.2.and.k0.eq.3) call residualBU
         call residual
         if (flagrecoil) call totalrecoil
         if (flagrescue) call normalization
         if (nin.eq.numinclow+1.and.numinclow.gt.0) call thermal
    20   if (flagurr) call urr
         if (.not.flagastro) call output
-        if (flagfission.and.flagmassdis.and.fymodel.eq.3) call ffevap
+        if (flagfission.and.flagmassdis.and.fymodel.ge.3) call ffevap
         if (flagrpevap) call rpevap
    10 continue
 c

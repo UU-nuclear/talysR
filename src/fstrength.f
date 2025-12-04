@@ -9,7 +9,7 @@ c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
-      character*80 key
+      character*132 key
       integer      Zcomp,Ncomp,irad,l,i,nen,nT,nT0,it,jt,itemp
       real         fstrength,Efs,Egamma,sgr1,egr1,ggr1,kgr1,egr2,ggr2,
      +             Egam2,e,Tnuc,ggredep0,ggredep,enum,denom,factor1,
@@ -100,8 +100,9 @@ c qrpaexist: flag for existence of tabulated QRPA strength functions
 c
         Tnuc=0.
         if (strength.eq.1.and.l.eq.1.and.irad.eq.1) then
-          if (k0.gt.0.or.Egamma.ne.Einc) then
-            e=min(Efs,20.)+S(Zcomp,Ncomp,k0)-delta(Zcomp,Ncomp,0)-Egamma
+c         if (k0.gt.0.or.Egamma.ne.Einc) then
+          if (Egamma.ne.Einc) then
+            e=min(Efs,20.)+S(Zcomp,Ncomp,1)-delta(Zcomp,Ncomp,0)-Egamma
             if (e.gt.0..and.alev(Zcomp,Ncomp).gt.0.)
      +        Tnuc=sqrt(e/alev(Zcomp,Ncomp))
           endif
@@ -127,7 +128,7 @@ c
           endif
         endif
 c
-c 3+4. Tabulated QRPA strength functions
+c 3+4+6+7+8+9+10. Tabulated QRPA strength functions
 c
 c locate    : subroutine to find value in ordered table
 c numgamqrpa: number of energies for QRPA strength function
@@ -156,8 +157,9 @@ c
      +     then
           nT0=nTqrpa
           if (irad.ne.1.or.l.ne.1) nT0=1
-          if ((k0.gt.0.or.Egamma.ne.Einc).and.nT0.gt.1) then
-            e=min(Efs,20.)+S(Zcomp,Ncomp,k0)-delta(Zcomp,Ncomp,0)-Egamma
+c         if ((k0.gt.0.or.Egamma.ne.Einc).and.nT0.gt.1) then
+          if (Egamma.ne.Einc.and.nT0.gt.1) then
+            e=min(Efs,20.)+S(Zcomp,Ncomp,1)-delta(Zcomp,Ncomp,0)-Egamma
             if (e.gt.0..and.alev(Zcomp,Ncomp).gt.0.)
      +        Tnuc=sqrt(e/alev(Zcomp,Ncomp))
             nT=nT0
@@ -183,56 +185,61 @@ c
           do 130 nen=0,numgamqrpa
             Eq(nen)=eqrpa(Zcomp,Ncomp,nen,irad,1)
   130     continue
-          do 140 it=1,itemp
-            jt=nT
-            if (it.eq.2) jt=nT+1
-            if (jt.gt.nT0) jt=nT0
-            if (Egamma.le.Eq(numgamqrpa)) then
-              call locate(Eq,0,numgamqrpa,Egamma,nen)
-              eb=Eq(nen)
-              ee=Eq(nen+1)
-              gamb=fqrpa(Zcomp,Ncomp,nen,jt,irad,1)
-              game=fqrpa(Zcomp,Ncomp,nen+1,jt,irad,1)
-              if (gamb.gt.0..and.game.gt.0.) then
-                f1=log10(gamb)+(Egamma-eb)/(ee-eb)*
-     +            (log10(game)-log10(gamb))
+          if (Egamma.lt.Eq(1)) then
+            fstrength=0.
+          else
+            do 140 it=1,itemp
+              jt=nT
+              if (it.eq.2) jt=nT+1
+              if (jt.gt.nT0) jt=nT0
+              if (Egamma.le.Eq(numgamqrpa)) then
+                call locate(Eq,0,numgamqrpa,Egamma,nen)
+                eb=Eq(nen)
+                ee=Eq(nen+1)
+                gamb=fqrpa(Zcomp,Ncomp,nen,jt,irad,1)
+                game=fqrpa(Zcomp,Ncomp,nen+1,jt,irad,1)
+                if (gamb.gt.0..and.game.gt.0.) then
+                  f1=log10(gamb)+(Egamma-eb)/(ee-eb)*
+     +              (log10(game)-log10(gamb))
+                  f2=10.**f1
+                else
+                  f2=gamb+(Egamma-eb)/(ee-eb)*(game-gamb)
+                endif
+              else
+                eb=Eq(numgamqrpa-1)
+                ee=Eq(numgamqrpa)
+                gamb=fqrpa(Zcomp,Ncomp,numgamqrpa-1,jt,irad,1)
+                game=fqrpa(Zcomp,Ncomp,numgamqrpa,jt,irad,1)
+                if (gamb.gt.0..and.game.gt.0.) then
+                  f1=log10(gamb)+(Egamma-eb)/(ee-eb)*
+     +              (log10(game)-log10(gamb))
+                  f2=10.**f1
+                else
+                  f2=gamb+(Egamma-eb)/(ee-eb)*(game-gamb)
+                endif
+              endif
+              if (it.eq.1) fb=f2
+              if (it.eq.2) fe=f2
+  140       continue
+            if (nT0.gt.1.and.Tb.ne.Te) then
+              if (fb.gt.0..and.fe.gt.0.) then
+                f1=log10(fb)+(Tnuc-Tb)/(Te-Tb)*
+     +            (log10(fe)-log10(fb))
                 f2=10.**f1
               else
-                f2=gamb+(Egamma-eb)/(ee-eb)*(game-gamb)
-              endif
-            else
-              eb=Eq(numgamqrpa-1)
-              ee=Eq(numgamqrpa)
-              gamb=fqrpa(Zcomp,Ncomp,numgamqrpa-1,jt,irad,1)
-              game=fqrpa(Zcomp,Ncomp,numgamqrpa,jt,irad,1)
-              if (gamb.gt.0..and.game.gt.0.) then
-                f1=log10(gamb)+(Egamma-eb)/(ee-eb)*
-     +            (log10(game)-log10(gamb))
-                f2=10.**f1
-              else
-                f2=gamb+(Egamma-eb)/(ee-eb)*(game-gamb)
+                f2=fb+(Tnuc-Tb)/(Te-Tb)*(fe-fb)
               endif
             endif
-            if (it.eq.1) fb=f2
-            if (it.eq.2) fe=f2
-  140     continue
-          if (nT0.gt.1.and.Tb.ne.Te) then
-            if (fb.gt.0..and.fe.gt.0.) then
-              f1=log10(fb)+(Tnuc-Tb)/(Te-Tb)*
-     +          (log10(fe)-log10(fb))
-              f2=10.**f1
-            else
-              f2=fb+(Tnuc-Tb)/(Te-Tb)*(fe-fb)
-            endif
+            fstrength=f2
           endif
-          fstrength=f2
         endif
 c
 c 5. Goriely Hybrid model
 c
         if (strength.eq.5.and.Exlfile(Zcomp,Ncomp,1,1)(1:1).eq.' '.and.
      +    l.eq.1.and.irad.eq.1) then
-          if (k0.gt.0.or.Egamma.ne.Einc) then
+c         if (k0.gt.0.or.Egamma.ne.Einc) then
+          if (Egamma.ne.Einc) then
             e=min(Efs,20.)+S(Zcomp,Ncomp,1)-delta(Zcomp,Ncomp,0)-Egamma
             if (e.gt.0..and.alev(Zcomp,Ncomp).gt.0.)
      +        Tnuc=sqrt(e/alev(Zcomp,Ncomp))
@@ -248,43 +255,45 @@ c
    10 continue
 c
 c Inclusion of additional extra strength (Pygmy Resonance),
-c only if explicitly specified in the input
+c only if explicitly specified in the input. 
 c
 c tpr1: strength of PR
 c
-      tpr1=tpr(Zcomp,Ncomp,irad,l,1)
-      if (Egamma.gt.0.001.and.tpr1.gt.0.) then
-        if (gamadjust(Zcomp,Ncomp)) then
-          key='tpr'
-          call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor1)
-          key='tpradjust'
-          call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor2)
-          tpr1=factor1*factor2*tpr(Zcomp,Ncomp,irad,l,1)*
-     +      tpradjust(Zcomp,Ncomp,irad,l,1)
-          key='gpr'
-          call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor1)
-          key='gpradjust'
-          call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor2)
-          gpr1=factor1*factor2*gpr(Zcomp,Ncomp,irad,l,1)*
-     +      gpradjust(Zcomp,Ncomp,irad,l,1)
-          key='epr'
-          call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor1)
-          key='epradjust'
-          call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor2)
-          epr1=factor1*factor2*epr(Zcomp,Ncomp,irad,l,1)*
-     +      epradjust(Zcomp,Ncomp,irad,l,1)
-        else
-          epr1=epr(Zcomp,Ncomp,irad,l,1)
-          gpr1=gpr(Zcomp,Ncomp,irad,l,1)
+      do 20 i=1,2
+        tpr1=tpr(Zcomp,Ncomp,irad,l,i)
+        if (Egamma.gt.0.001.and.tpr1.gt.0.) then
+          if (gamadjust(Zcomp,Ncomp)) then
+            key='tpr'
+            call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor1)
+            key='tpradjust'
+            call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor2)
+            tpr1=factor1*factor2*tpr(Zcomp,Ncomp,irad,l,i)*
+     +        tpradjust(Zcomp,Ncomp,irad,l,i)
+            key='gpr'
+            call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor1)
+            key='gpradjust'
+            call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor2)
+            gpr1=factor1*factor2*gpr(Zcomp,Ncomp,irad,l,i)*
+     +        gpradjust(Zcomp,Ncomp,irad,l,i)
+            key='epr'
+            call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor1)
+            key='epradjust'
+            call adjust(Egamma,key,Zcomp,Ncomp,0,l,factor2)
+            epr1=factor1*factor2*epr(Zcomp,Ncomp,irad,l,i)*
+     +        epradjust(Zcomp,Ncomp,irad,l,i)
+          else
+            epr1=epr(Zcomp,Ncomp,irad,l,i)
+            gpr1=gpr(Zcomp,Ncomp,irad,l,i)
+          endif
+          kgr1=kgr(l)
+          epr2=epr1**2
+          gpr2=gpr1**2
+          Egam2=Egamma**2
+          enum=gpr2*Egamma**(3-2*l)
+          denom=(Egam2-epr2)**2+Egam2*gpr2
+          fstrength=fstrength+kgr1*tpr1*enum/denom
         endif
-        kgr1=kgr(l)
-        epr2=epr1**2
-        gpr2=gpr1**2
-        Egam2=Egamma**2
-        enum=gpr2*Egamma**(3-2*l)
-        denom=(Egam2-epr2)**2+Egam2*gpr2
-        fstrength=fstrength+kgr1*tpr1*enum/denom
-      endif
+   20 continue
 c 
 c Inclusion of an additional low-E limit of E1 nature
 c
@@ -294,8 +303,8 @@ c
         upbendc=upbend(Zcomp,Ncomp,irad,l,1)
         upbende=upbend(Zcomp,Ncomp,irad,l,2)
         upbendf=upbend(Zcomp,Ncomp,irad,l,3)
-        if (strengthM1.eq.8.and.irad.eq.0.and.l.eq.1.and.
-     +    Zcomp+Ncomp.ge.105) upbendf=0.
+        if ((strengthM1.eq.8.or.strengthM1.eq.10).and.irad.eq.0.and.
+     +    l.eq.1.and.Zcomp+Ncomp.ge.105) upbendf=0.
         if (irad.eq.1.and.l.eq.1) then
           e=min(Efs,20.)+S(Zcomp,Ncomp,1)-Egamma
           if (e.gt.1.) fstrength=fstrength+
