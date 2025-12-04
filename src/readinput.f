@@ -6,6 +6,13 @@ c | Date  : January 20, 2023
 c | Task  : Read input
 c +---------------------------------------------------------------------
 c
+c +---------------------------------------------------------------------
+c | Modified by: Alf Göök
+c | Date       : January 10, 2023
+c | Purpuse    : read from file 'input' instead of stdin in order to
+c |              make it work with MPI
+c +---------------------------------------------------------------------
+c
 c ****************** Declarations and common blocks ********************
 c
       include "talys.cmb"
@@ -18,6 +25,11 @@ c inline  : input line
 c numlines: maximum number of input lines
 c nlines  : number of input lines
 c
+c modification: instead of reading from stdin we read from a file in the
+c current directory called 'input'
+      open(1, file = 'input', status = 'old')
+c
+c
 c We read the complete input file first as a set of character strings.
 c The actual keywords will be read from these later on. For natural
 c elements, the input file only needs to be read once.
@@ -26,7 +38,7 @@ c
       if (nlines > 0) return
       i = 1
       do
-        read(*, '(a132)', iostat = istat) inline(i)
+        read(1, '(a132)', iostat = istat) inline(i)
         if (istat ==  -1) exit
         i = i + 1
         if (i > numlines) then
@@ -37,6 +49,8 @@ c
         endif
       enddo
       nlines = i - 1
+
+      close(1)
 c
 c ************** Convert uppercase to lowercase characters *************
 c

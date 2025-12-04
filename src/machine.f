@@ -29,7 +29,7 @@ c ********************* Set directory for structure data ***************
 c
 c path   : directory containing structure files to be read
 c
-      codedir = '/Users/koning/talys/'
+      CALL get_environment_variable("TALYSHOME", codedir)
       path=trim(codedir)//'structure/'
 c
 c Test to check accessibility of structure files
@@ -37,7 +37,7 @@ c
       inquire (file=trim(path)//'abundance/H.abun',exist=lexist)
       if (lexist) return
       write(*,'(" TALYS-error: Structure database not installed:",
-     +  " change path in machine.f")')
+     +  " set the environment variable TALYSHOME")')
       stop
       end
 Copyright (C)  2023 A.J. Koning, S. Hilaire and S. Goriely
