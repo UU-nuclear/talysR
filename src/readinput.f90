@@ -1,85 +1,67 @@
-subroutine readinput
-!
-!-----------------------------------------------------------------------------------------------------------------------------------
-! Purpose   : Read input
-!
-! Author    : Arjan Koning
-!
-! 2021-12-30: Original code
-!-----------------------------------------------------------------------------------------------------------------------------------
-!
-! *** Use data from other modules
-!
-  use A0_talys_mod
-  use A1_error_handling_mod
-!
-! All global variables
-!   numlines   ! number of input lines
-! Variables for reading input lines
-!   inline     ! input line
-!   nlines     ! number of input lines
-!   nlines0    ! number of input lines
-! Constants
-!   iso        ! counter for isotope
-! Error handling
-!   range_integer_error ! Test if integer variable is out of range
-!   read_error          ! Message for file reading error
-!
-! *** Declaration of local data
-!
-  implicit none
-  character(len=132) :: profile
-  logical           :: lexist
-  integer           :: i     ! counter
-  integer           :: istat ! logical for file access
-!
-! ************************** User Input ********************************
-!
-! We read the complete input file first as a set of character strings.
-! The actual keywords will be read from these later on.
-! For natural elements, the input file only needs to be read once.
-!
-  if (iso /= 1) return
-  if (nlines > 0) return
-  i = 1
-  do
-    read(*, '(a132)', iostat = istat) inline(i)
-    if (istat ==  -1) exit
-    if (istat /= 0) call read_error(inline(i), istat)
-    i = i + 1
-    call range_integer_error('inline', i, 1, numlines)
-  enddo
-!
-! ***** Add profile to input file ******
-!
-! You may edit structure/profile to insert keywords which are always included in your input files
-!
-  profile = trim(path)//'profile'
-  inquire (file = profile, exist = lexist)
-  if (lexist) then
-    open (unit = 1, file = profile, status = 'unknown')
-    do
-      read(1, '(a132)', iostat = istat) inline(i)
-      if (istat ==  -1) exit
-      if (istat /= 0) call read_error(inline(i), istat)
-      i = i + 1
-      call range_integer_error('inline', i, 1, numlines)
-    enddo
-    close (unit = 1)
-  endif
-  nlines = i - 1
-!
-! ************** Convert uppercase to lowercase characters *************
-!
-! For easy handling of all the input parameters, the whole input is converted to lowercase characters,
-! with the exception of filenames or other character strings.
-!
-! convert: subroutine to convert input line from upper case to lowercase
-!
-  do i = 1, nlines
-    call convert(i)
-  enddo
-  nlines0 = nlines
-  return
-end subroutine readinput
-! Copyright A.J. Koning 2021
+      subroutine readinput
+c
+c +---------------------------------------------------------------------
+c | Author: Arjan Koning
+c | Date  : February 25, 2012
+c | Task  : Read input
+c +---------------------------------------------------------------------
+c
+c +---------------------------------------------------------------------
+c | Modified by: Alf Göök
+c | Date       : January 10, 2023
+c | Purpuse    : read from file 'input' instead of stdin in order to
+c |              make it work with MPI       
+c +---------------------------------------------------------------------
+c
+c ****************** Declarations and common blocks ********************
+c
+      include "talys.cmb"
+      integer i
+c
+c ************************** User Input ********************************
+c
+c iso     : counter for isotope
+c inline  : input line
+c numlines: maximum number of input lines
+c nlines  : number of input lines
+c
+c modification: instead of reading from stdin we read from a file in the 
+c current directory called 'input'
+      open(1, file = 'input', status = 'old')
+c
+c
+c We read the complete input file first as a set of character strings.
+c The actual keywords will be read from these later on. For natural
+c elements, the input file only needs to be read once.
+c
+      if (iso.ne.1) return
+      if (nlines.gt.0) return
+      i=1
+   10 read(1,'(a80)',end=100) inline(i)
+      i=i+1
+      if (i.gt.numlines) then
+        write(*,'(" TALYS-error: Number of input lines exceeds ",i5)')
+     +    numlines
+        write(*,'(" numlines in talys.cmb should be increased")')
+        stop
+      endif
+      goto 10
+  100 nlines=i-1
+
+      close(1)
+c
+c ************** Convert uppercase to lowercase characters *************
+c
+c For easy handling of all the input parameters, the whole input is
+c converted to lowercase characters, with the exception of filenames or
+c other character strings.
+c
+c convert: subroutine to convert input line from upper case to lowercase
+c
+      do 110 i=1,nlines
+        call convert(i)
+  110 continue
+      nlines0=nlines
+      return
+      end
+Copyright (C)  2013 A.J. Koning, S. Hilaire and S. Goriely
